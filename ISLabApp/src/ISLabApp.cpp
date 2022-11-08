@@ -11,17 +11,15 @@ public:
 		ImGui::Begin("Hello");
 		ImGui::Button("Button");
 		ImGui::End();
-
-		ImGui::ShowDemoWindow();
 	}
 };
 
-Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
+Walnut::Application * Walnut::CreateApplication(int argc, char ** argv)
 {
 	Walnut::ApplicationSpecification spec;
-	spec.Name = "Walnut Example";
+	spec.Name = "IS lab work";
 
-	Walnut::Application* app = new Walnut::Application(spec);
+	Walnut::Application * app = new Walnut::Application(spec);
 	app->PushLayer<ExampleLayer>();
 	app->SetMenubarCallback([app]()
 	{
