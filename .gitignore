@@ -4,6 +4,7 @@ bin/
 bin-int/
 db/
 OracleXE213_Win64/
+instantclient_21_7/
 
 # Files
 *.vcxproj
