@@ -1,31 +1,33 @@
+#include "ProductCategoriesTableWindow.h"
+
 #include "CountriesTableWindow.h"
 
 #include <imgui.h>
 #include <algorithm>
 #include <map>
 
-CountriesTableWindow::CountriesTableWindow(
+ProductCategoriesTableWindow::ProductCategoriesTableWindow(
     oci::Environment * _Env,
     oci::Connection * _Conn
   ) :
     m_Env{ _Env },
     m_Conn{ _Conn }
 {
-  m_CreateStmt = m_Conn->createStatement("INSERT INTO countries VALUES(:1,:2)");
-  m_DeleteStmt = m_Conn->createStatement("DELETE FROM countries WHERE country_id = :1");
-  m_UpdateStmt = m_Conn->createStatement("SELECT * FROM countries");
+  m_CreateStmt = m_Conn->createStatement("INSERT INTO product_categories(category_name) VALUES(:1)");
+  m_DeleteStmt = m_Conn->createStatement("DELETE FROM product_categories WHERE category_id = :1");
+  m_UpdateStmt = m_Conn->createStatement("SELECT * FROM product_categories");
 }
 
-CountriesTableWindow::~CountriesTableWindow()
+ProductCategoriesTableWindow::~ProductCategoriesTableWindow()
 {
   m_Conn->terminateStatement(m_CreateStmt);
   m_Conn->terminateStatement(m_DeleteStmt);
   m_Conn->terminateStatement(m_UpdateStmt);
 }
 
-void CountriesTableWindow::OnUIRender()
+void ProductCategoriesTableWindow::OnUIRender()
 {
-  ImGui::Begin("Countries");
+  ImGui::Begin("Product categories");
 
   if (ImGui::IsWindowAppearing())
     m_NeedUpdate = true;
@@ -52,22 +54,21 @@ void CountriesTableWindow::OnUIRender()
   ImGui::End();
 }
 
-void CountriesTableWindow::OpenCreateWindow()
+void ProductCategoriesTableWindow::OpenCreateWindow()
 {
-  m_IsCreatingNewCountry = true;
-  ImGui::OpenPopup("Create new country");
+  m_IsCreating = true;
+  ImGui::OpenPopup("Create");
 }
 
-void CountriesTableWindow::RenderCreateWindow()
+void ProductCategoriesTableWindow::RenderCreateWindow()
 {
-  if (ImGui::BeginPopupModal("Create new country", &m_IsCreatingNewCountry, ImGuiWindowFlags_AlwaysAutoResize))
+  if (ImGui::BeginPopupModal("Create", &m_IsCreating, ImGuiWindowFlags_AlwaysAutoResize))
   {
-    ImGui::InputText("Country ID", m_CountryIdBuffer.data(), m_CountryIdBuffer.size());
-    ImGui::InputText("Country name", m_CountryNameBuffer.data(), m_CountryNameBuffer.size());
+    ImGui::InputText("Category name", m_CategoryNameBuffer.data(), m_CategoryNameBuffer.size());
 
     if (ButtonCentered("OK"))
     {
-      CreateCountry(m_CountryIdBuffer.data(), m_CountryNameBuffer.data());
+      Create(m_CategoryNameBuffer.data());
       UpdateTable();
       CloseCreateWindow();
     }
@@ -78,26 +79,26 @@ void CountriesTableWindow::RenderCreateWindow()
   }
 }
 
-void CountriesTableWindow::CloseCreateWindow()
+void ProductCategoriesTableWindow::CloseCreateWindow()
 {
-  m_IsCreatingNewCountry = false;
+  m_IsCreating = false;
 }
 
-void CountriesTableWindow::OpenDeleteWindow()
+void ProductCategoriesTableWindow::OpenDeleteWindow()
 {
-  m_IsDeletingCountry = true;
-  ImGui::OpenPopup("Delete country");
+  m_IsDeleting = true;
+  ImGui::OpenPopup("Delete");
 }
 
-void CountriesTableWindow::RenderDeleteWindow()
+void ProductCategoriesTableWindow::RenderDeleteWindow()
 {
-  if (ImGui::BeginPopupModal("Delete country", &m_IsDeletingCountry, ImGuiWindowFlags_AlwaysAutoResize))
+  if (ImGui::BeginPopupModal("Delete", &m_IsDeleting, ImGuiWindowFlags_AlwaysAutoResize))
   {
-    DropDown<0>("Country ID", m_CountriesTable, m_CountryIdBuffer);
+    DropDown<0>("Category ID", m_Table, m_CategoryId);
 
     if (ButtonCentered("OK"))
     {
-      DeleteCountry(m_CountryIdBuffer.data());
+      Delete(m_CategoryId);
       UpdateTable();
       CloseDeleteWindow();
     }
@@ -108,18 +109,18 @@ void CountriesTableWindow::RenderDeleteWindow()
   }
 }
 
-void CountriesTableWindow::CloseDeleteWindow()
+void ProductCategoriesTableWindow::CloseDeleteWindow()
 {
-  m_IsDeletingCountry = false;
+  m_IsDeleting = false;
 }
 
-void CountriesTableWindow::OpenErrorWindow()
+void ProductCategoriesTableWindow::OpenErrorWindow()
 {
   m_IsError = true;
   ImGui::OpenPopup("Error");
 }
 
-void CountriesTableWindow::RenderErrorWindow()
+void ProductCategoriesTableWindow::RenderErrorWindow()
 {
   if (ImGui::BeginPopupModal("Error", &m_IsError, ImGuiWindowFlags_AlwaysAutoResize))
   {
@@ -132,18 +133,18 @@ void CountriesTableWindow::RenderErrorWindow()
   }
 }
 
-void CountriesTableWindow::CloseErrorWindow()
+void ProductCategoriesTableWindow::CloseErrorWindow()
 {
   m_IsError = false;
 }
 
-void CountriesTableWindow::RenderTable()
+void ProductCategoriesTableWindow::RenderTable()
 {
   constexpr auto TableFlags = ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
                               ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY |
                               ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Sortable;
 
-  if (ImGui::BeginTable("CountriesTable", 2, TableFlags, ImVec2(-1, -1)))
+  if (ImGui::BeginTable("ProductCategoriesTable", 2, TableFlags, ImVec2(-1, -1)))
   {
     ImGui::TableSetupColumn("ID");
     ImGui::TableSetupColumn("Name");
@@ -156,22 +157,22 @@ void CountriesTableWindow::RenderTable()
       SortSpecs->SpecsDirty = false;
     }
 
-    for (const auto & [ID, Name] : m_CountriesTable)
+    for (const auto & [CategoryID, CategoryName] : m_Table)
     {
       ImGui::TableNextRow();
       ImGui::TableNextColumn();
-      ImGui::TextUnformatted(ID.c_str());
+      ImGui::Text("%d", CategoryID);
       ImGui::TableNextColumn();
-      ImGui::TextUnformatted(Name.c_str());
+      ImGui::TextUnformatted(CategoryName.c_str());
     }
 
     ImGui::EndTable();
   }
 }
 
-void CountriesTableWindow::UpdateTable()
+void ProductCategoriesTableWindow::UpdateTable()
 {
-  m_CountriesTable.clear();
+  m_Table.clear();
 
   try
   {
@@ -180,7 +181,7 @@ void CountriesTableWindow::UpdateTable()
 
     while (Result->status() == oci::ResultSet::DATA_AVAILABLE)
     {
-      m_CountriesTable.emplace_back(Result->getString(1), Result->getString(2));
+      m_Table.emplace_back(Result->getInt(1), Result->getString(2));
       Result->next();
     }
   }
@@ -190,33 +191,31 @@ void CountriesTableWindow::UpdateTable()
     OpenErrorWindow();
   }
 
-  if (!m_CountriesTable.empty())
+  if (!m_Table.empty())
   {
-    Copy(std::get<0>(m_CountriesTable.front()), m_CountryIdBuffer);
-    Copy(std::get<1>(m_CountriesTable.front()), m_CountryNameBuffer);
+    Copy(std::get<0>(m_Table.front()), m_CategoryId);
+    Copy(std::get<1>(m_Table.front()), m_CategoryNameBuffer);
   }
 }
 
-void CountriesTableWindow::SortTable(
+void ProductCategoriesTableWindow::SortTable(
     int _ColIdx,
     ImGuiSortDirection _SortDir
   )
 {
   std::sort(
-      m_CountriesTable.begin(), m_CountriesTable.end(),
-      PredicateImpl<std::string, std::string>{ _ColIdx, _SortDir }
+      m_Table.begin(), m_Table.end(),
+      PredicateImpl<int, std::string>{ _ColIdx, _SortDir }
     );
 }
 
-void CountriesTableWindow::CreateCountry(
-    const char * _ID,
-    const char * _Name
+void ProductCategoriesTableWindow::Create(
+    const char * _CategoryName
   )
 {
   try
   {
-    m_CreateStmt->setString(1, _ID);
-    m_CreateStmt->setString(2, _Name);
+    m_CreateStmt->setString(1, _CategoryName);
     m_CreateStmt->executeUpdate();
     m_Conn->commit();
     TableChangedSignal.Emit();
@@ -228,13 +227,13 @@ void CountriesTableWindow::CreateCountry(
   }
 }
 
-void CountriesTableWindow::DeleteCountry(
-    const char * _ID
+void ProductCategoriesTableWindow::Delete(
+    int _CategoryID
   )
 {
   try
   {
-    m_DeleteStmt->setString(1, _ID);
+    m_DeleteStmt->setInt(1, _CategoryID);
     m_DeleteStmt->executeUpdate();
     m_Conn->commit();
     TableChangedSignal.Emit();
@@ -246,7 +245,7 @@ void CountriesTableWindow::DeleteCountry(
   }
 }
 
-const Table<std::string, std::string> & CountriesTableWindow::GetTable() const
+const Table<int, std::string>& ProductCategoriesTableWindow::GetTable() const
 {
-  return m_CountriesTable;
+  return m_Table;
 }

@@ -7,19 +7,22 @@
 #include <vector>
 #include <tuple>
 #include <functional>
-#include <signals/Signal.h>
+#include <signals/Connection.h>
 
-class CountriesTableWindow
+class ProductCategoriesTableWindow;
+
+class ProductsTableWindow
   : public IWindow
 {
 public:
 
-  CountriesTableWindow(
+  ProductsTableWindow(
       oci::Environment * _Env,
-      oci::Connection * _Conn
+      oci::Connection * _Conn,
+      ProductCategoriesTableWindow * _Categories
     );
 
-  ~CountriesTableWindow();
+  ~ProductsTableWindow();
 
   void OnUIRender() override;
 
@@ -43,20 +46,17 @@ public:
       ImGuiSortDirection _SortDir
     );
 
-  void CreateCountry(
-      const char * _ID,
-      const char * _Name
+  void Create(
+      const char * _ProductName,
+      const char * _Description,
+      float _Cost,
+      float _Price,
+      int _CategoryId
     );
 
-  void DeleteCountry(
-      const char * _ID
+  void Delete(
+      int _ProductID
     );
-
-  const Table<std::string, std::string> & GetTable() const;
-
-public:
-
-  sig::CSignal<> TableChangedSignal;
 
 private:
 
@@ -67,15 +67,21 @@ private:
   oci::Statement * m_DeleteStmt = nullptr;
   oci::Statement * m_UpdateStmt = nullptr;
 
-  std::vector<char> m_CountryIdBuffer = std::vector<char>(2 + 1, '\0');
-  std::vector<char> m_CountryNameBuffer = std::vector<char>(40 + 1, '\0');
+  int m_ProductId = 0;
+  std::vector<char> m_ProductNameBuffer = std::vector<char>(255 + 1, '\0');
+  std::vector<char> m_DescriptionBuffer = std::vector<char>(2000 + 1, '\0');
+  float m_Cost = 0;
+  float m_Price = 0;
+  int m_CategoryId = 0;
 
-  bool m_IsCreatingNewCountry = false;
-  bool m_IsDeletingCountry = false;
+  bool m_IsCreating = false;
+  bool m_IsDeleting = false;
   bool m_IsError = false;
   bool m_NeedUpdate = true;
 
   std::string m_ErrorMessage;
 
-  Table<std::string, std::string> m_CountriesTable;
+  Table<int, std::string, std::string, float, float, int> m_Table;
+  ProductCategoriesTableWindow * m_Categories = nullptr;
+  sig::CConnection<> m_SignalConnection;
 };

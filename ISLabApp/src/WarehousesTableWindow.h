@@ -7,19 +7,22 @@
 #include <vector>
 #include <tuple>
 #include <functional>
-#include <signals/Signal.h>
+#include <signals/Connection.h>
 
-class CountriesTableWindow
+class CountriesTableWindow;
+
+class WarehousesTableWindow
   : public IWindow
 {
 public:
 
-  CountriesTableWindow(
+  WarehousesTableWindow(
       oci::Environment * _Env,
-      oci::Connection * _Conn
+      oci::Connection * _Conn,
+      CountriesTableWindow * _Countries
     );
 
-  ~CountriesTableWindow();
+  ~WarehousesTableWindow();
 
   void OnUIRender() override;
 
@@ -43,20 +46,14 @@ public:
       ImGuiSortDirection _SortDir
     );
 
-  void CreateCountry(
-      const char * _ID,
-      const char * _Name
+  void Create(
+      const char * _WarehouseName,
+      const char * _CountryID
     );
 
-  void DeleteCountry(
-      const char * _ID
+  void Delete(
+      int _WarehouseID
     );
-
-  const Table<std::string, std::string> & GetTable() const;
-
-public:
-
-  sig::CSignal<> TableChangedSignal;
 
 private:
 
@@ -67,15 +64,18 @@ private:
   oci::Statement * m_DeleteStmt = nullptr;
   oci::Statement * m_UpdateStmt = nullptr;
 
+  int m_WarehouseId = 0;
+  std::vector<char> m_WarehouseNameBuffer = std::vector<char>(255 + 1, '\0');
   std::vector<char> m_CountryIdBuffer = std::vector<char>(2 + 1, '\0');
-  std::vector<char> m_CountryNameBuffer = std::vector<char>(40 + 1, '\0');
 
-  bool m_IsCreatingNewCountry = false;
-  bool m_IsDeletingCountry = false;
+  bool m_IsCreating = false;
+  bool m_IsDeleting = false;
   bool m_IsError = false;
   bool m_NeedUpdate = true;
 
   std::string m_ErrorMessage;
 
-  Table<std::string, std::string> m_CountriesTable;
+  Table<int, std::string, std::string> m_Table;
+  CountriesTableWindow * m_Countries = nullptr;
+  sig::CConnection<> m_SignalConnection;
 };

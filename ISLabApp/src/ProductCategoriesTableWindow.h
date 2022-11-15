@@ -7,19 +7,18 @@
 #include <vector>
 #include <tuple>
 #include <functional>
-#include <signals/Signal.h>
 
-class CountriesTableWindow
+class ProductCategoriesTableWindow
   : public IWindow
 {
 public:
 
-  CountriesTableWindow(
+  ProductCategoriesTableWindow(
       oci::Environment * _Env,
       oci::Connection * _Conn
     );
 
-  ~CountriesTableWindow();
+  ~ProductCategoriesTableWindow();
 
   void OnUIRender() override;
 
@@ -43,16 +42,15 @@ public:
       ImGuiSortDirection _SortDir
     );
 
-  void CreateCountry(
-      const char * _ID,
-      const char * _Name
+  void Create(
+      const char * _CategoryName
     );
 
-  void DeleteCountry(
-      const char * _ID
+  void Delete(
+      int _CategoryID
     );
 
-  const Table<std::string, std::string> & GetTable() const;
+  const Table<int, std::string> & GetTable() const;
 
 public:
 
@@ -67,15 +65,15 @@ private:
   oci::Statement * m_DeleteStmt = nullptr;
   oci::Statement * m_UpdateStmt = nullptr;
 
-  std::vector<char> m_CountryIdBuffer = std::vector<char>(2 + 1, '\0');
-  std::vector<char> m_CountryNameBuffer = std::vector<char>(40 + 1, '\0');
+  int m_CategoryId = 0;
+  std::vector<char> m_CategoryNameBuffer = std::vector<char>(255 + 1, '\0');
 
-  bool m_IsCreatingNewCountry = false;
-  bool m_IsDeletingCountry = false;
+  bool m_IsCreating = false;
+  bool m_IsDeleting = false;
   bool m_IsError = false;
   bool m_NeedUpdate = true;
 
   std::string m_ErrorMessage;
 
-  Table<std::string, std::string> m_CountriesTable;
+  Table<int, std::string> m_Table;
 };

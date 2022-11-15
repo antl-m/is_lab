@@ -1,6 +1,9 @@
 #include "DBLayer.h"
 
 #include "CountriesTableWindow.h"
+#include "WarehousesTableWindow.h"
+#include "ProductCategoriesTableWindow.h"
+#include "ProductsTableWindow.h"
 
 #include <imgui.h>
 #include <string_view>
@@ -19,7 +22,15 @@ void DBLayer::OnAttach()
   m_Env = oci::Environment::createEnvironment();
   m_Conn = m_Env->createConnection(USER_NAME.data(), PASSWORD.data(), CONNECT_STRING.data());
 
-  m_Windows.emplace_back(std::make_unique<CountriesTableWindow>(m_Env, m_Conn));
+  auto Countries = std::make_unique<CountriesTableWindow>(m_Env, m_Conn);
+  auto Warehouses = std::make_unique<WarehousesTableWindow>(m_Env, m_Conn, Countries.get());
+  auto Categories = std::make_unique<ProductCategoriesTableWindow>(m_Env, m_Conn);
+  auto Products = std::make_unique<ProductsTableWindow>(m_Env, m_Conn, Categories.get());
+
+  m_Windows.emplace_back(std::move(Countries));
+  m_Windows.emplace_back(std::move(Warehouses));
+  m_Windows.emplace_back(std::move(Categories));
+  m_Windows.emplace_back(std::move(Products));
 }
 
 void DBLayer::OnDetach()
