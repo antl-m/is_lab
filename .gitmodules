@@ -15,3 +15,6 @@
 [submodule "vendor/GLFW"]
 	path = vendor/GLFW
 	url = https://github.com/TheCherno/GLFW
+[submodule "vendor/implot"]
+	path = vendor/implot
+	url = https://github.com/epezent/implot
