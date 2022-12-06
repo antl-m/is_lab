@@ -1,5 +1,7 @@
 #pragma once
 
+#include "OrderStatus.h"
+
 #include <occi.h>
 #include <imgui.h>
 #include <tuple>
@@ -49,6 +51,11 @@ template<typename ... TArgs>
 struct PredicateImpl<Table<TArgs...>> : PredicateImpl<TArgs...>
 {};
 
+template<typename ... SignalArguments>
+struct MultiConnection
+{
+
+};
 
 inline bool ButtonCentered(
     const char * _Label
@@ -86,6 +93,13 @@ inline std::string Stringify(
   return _Item.data();
 }
 
+inline std::string Stringify(
+    EOrderStatus _OrderStatus
+  )
+{
+  return ORDER_STATUS_TO_STRING.at(_OrderStatus);
+}
+
 inline void Copy(
     const std::string & _Str,
     std::vector<char> & _Buf
@@ -106,6 +120,22 @@ inline void Copy(
 inline void Copy(
     float _Val,
     float & _Dst
+  )
+{
+  _Dst = _Val;
+}
+
+inline void Copy(
+    const oci::Date & _Val,
+    oci::Date & _Dst
+  )
+{
+  _Dst = _Val;
+}
+
+inline void Copy(
+    EOrderStatus _Val,
+    EOrderStatus & _Dst
   )
 {
   _Dst = _Val;
@@ -134,3 +164,30 @@ void DropDown(
     ImGui::EndCombo();
   }
 }
+
+inline bool DropDownOrderStatus(
+    const char * _Label,
+    EOrderStatus & _Current
+  )
+{
+  bool Activated = false;
+  if (ImGui::BeginCombo(_Label, ORDER_STATUS_TO_STRING.at(_Current).c_str()))
+  {
+    for (const auto OrderStatus : ORDER_STATUS_LIST)
+    {
+      if (ImGui::Selectable(ORDER_STATUS_TO_STRING.at(OrderStatus).c_str(), OrderStatus == _Current))
+      {
+        _Current = OrderStatus;
+        Activated = true;
+      }
+      if (OrderStatus == _Current)
+        ImGui::SetItemDefaultFocus();
+    }
+    ImGui::EndCombo();
+  }
+  return Activated;
+}
+
+inline ImFont * GetFontS() { return ImGui::GetIO().Fonts->Fonts[0]; }
+inline ImFont * GetFontM() { return ImGui::GetIO().Fonts->Fonts[1]; }
+inline ImFont * GetFontL() { return ImGui::GetIO().Fonts->Fonts[2]; }

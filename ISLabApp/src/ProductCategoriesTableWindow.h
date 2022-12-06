@@ -51,6 +51,9 @@ public:
     );
 
   const Table<int, std::string> & GetTable() const;
+  std::string_view GetCategoryName(
+      const int _CategoryID
+    );
 
 public:
 

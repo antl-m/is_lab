@@ -9,20 +9,22 @@
 #include <functional>
 #include <signals/Connection.h>
 
-class ProductCategoriesTableWindow;
+class CustomersTableWindow;
+class ProductsTableWindow;
 
-class ProductsTableWindow
+class OrdersTableWindow
   : public IWindow
 {
 public:
 
-  ProductsTableWindow(
+  OrdersTableWindow(
       oci::Environment * _Env,
       oci::Connection * _Conn,
-      ProductCategoriesTableWindow * _Categories
+      CustomersTableWindow * _Customers,
+      ProductsTableWindow * _Products
     );
 
-  ~ProductsTableWindow();
+  ~OrdersTableWindow();
 
   void OnUIRender() override;
 
@@ -47,18 +49,23 @@ public:
     );
 
   void Create(
-      const char * _ProductName,
-      const char * _Description,
-      float _Cost,
-      float _Price,
-      int _CategoryId
+      int _CustomerId,
+      EOrderStatus _Status,
+      const oci::Date & _Date,
+      int _ProductId,
+      float _Quantity
+    );
+
+  void UpdateStatus(
+      int _OrderId,
+      EOrderStatus _NewStatus
     );
 
   void Delete(
-      int _ProductID
+      int _OrderID
     );
 
-  const auto & GetTable() const
+  const auto & GetTable()
   {
     return m_Table;
   }
@@ -74,14 +81,17 @@ private:
 
   oci::Statement * m_CreateStmt = nullptr;
   oci::Statement * m_DeleteStmt = nullptr;
+  oci::Statement* m_UpdateStatusStmt = nullptr;
   oci::Statement * m_UpdateStmt = nullptr;
 
+  int m_OrderId = 0;
+  int m_CustomerId = 0;
+  EOrderStatus m_OrderStatus = EOrderStatus::CREATED;
+  int m_Year = 2022;
+  int m_Month = 11;
+  int m_Day = 14;
   int m_ProductId = 0;
-  std::vector<char> m_ProductNameBuffer = std::vector<char>(255 + 1, '\0');
-  std::vector<char> m_DescriptionBuffer = std::vector<char>(2000 + 1, '\0');
-  float m_Cost = 0;
-  float m_Price = 0;
-  int m_CategoryId = 0;
+  float m_Quantity = 0;
 
   bool m_IsCreating = false;
   bool m_IsDeleting = false;
@@ -90,7 +100,8 @@ private:
 
   std::string m_ErrorMessage;
 
-  Table<int, std::string, std::string, float, float, int> m_Table;
-  ProductCategoriesTableWindow * m_Categories = nullptr;
-  sig::CConnection<> m_SignalConnection;
+  Table<int, int, EOrderStatus, oci::Date, int, float> m_Table;
+  CustomersTableWindow * m_Customers = nullptr;
+  ProductsTableWindow * m_Products = nullptr;
+  sig::CMultiConnection m_SignalConnections;
 };

@@ -55,6 +55,15 @@ public:
       int _WarehouseID
     );
 
+  const auto & GetTable() const
+  {
+    return m_Table;
+  }
+
+public:
+
+  sig::CSignal<> TableChangedSignal;
+
 private:
 
   oci::Environment * m_Env = nullptr;
@@ -77,5 +86,5 @@ private:
 
   Table<int, std::string, std::string> m_Table;
   CountriesTableWindow * m_Countries = nullptr;
-  sig::CConnection<> m_SignalConnection;
+  sig::CMultiConnection m_SignalConnections;
 };

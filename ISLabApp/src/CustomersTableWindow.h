@@ -9,20 +9,20 @@
 #include <functional>
 #include <signals/Connection.h>
 
-class ProductCategoriesTableWindow;
+class CountriesTableWindow;
 
-class ProductsTableWindow
+class CustomersTableWindow
   : public IWindow
 {
 public:
 
-  ProductsTableWindow(
+  CustomersTableWindow(
       oci::Environment * _Env,
       oci::Connection * _Conn,
-      ProductCategoriesTableWindow * _Categories
+      CountriesTableWindow * _Countries
     );
 
-  ~ProductsTableWindow();
+  ~CustomersTableWindow();
 
   void OnUIRender() override;
 
@@ -47,15 +47,15 @@ public:
     );
 
   void Create(
-      const char * _ProductName,
-      const char * _Description,
-      float _Cost,
-      float _Price,
-      int _CategoryId
+      const char * _FirstName,
+      const char * _LastName,
+      const char * _Address,
+      const char * _Email,
+      const char * _CountryId
     );
 
   void Delete(
-      int _ProductID
+      int _CustomerID
     );
 
   const auto & GetTable() const
@@ -76,12 +76,12 @@ private:
   oci::Statement * m_DeleteStmt = nullptr;
   oci::Statement * m_UpdateStmt = nullptr;
 
-  int m_ProductId = 0;
-  std::vector<char> m_ProductNameBuffer = std::vector<char>(255 + 1, '\0');
-  std::vector<char> m_DescriptionBuffer = std::vector<char>(2000 + 1, '\0');
-  float m_Cost = 0;
-  float m_Price = 0;
-  int m_CategoryId = 0;
+  int m_CustomerId = 0;
+  std::vector<char> m_FirstNameBuffer = std::vector<char>(255 + 1, '\0');
+  std::vector<char> m_LastNameBuffer = std::vector<char>(255 + 1, '\0');
+  std::vector<char> m_AddressBuffer = std::vector<char>(255 + 1, '\0');
+  std::vector<char> m_EmailBuffer = std::vector<char>(255 + 1, '\0');
+  std::vector<char> m_CountryIdBuffer = std::vector<char>(2 + 1, '\0');
 
   bool m_IsCreating = false;
   bool m_IsDeleting = false;
@@ -90,7 +90,7 @@ private:
 
   std::string m_ErrorMessage;
 
-  Table<int, std::string, std::string, float, float, int> m_Table;
-  ProductCategoriesTableWindow * m_Categories = nullptr;
+  Table<int, std::string, std::string, std::string, std::string, std::string> m_Table;
+  CountriesTableWindow * m_Countries = nullptr;
   sig::CConnection<> m_SignalConnection;
 };

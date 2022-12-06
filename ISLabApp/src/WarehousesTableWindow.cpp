@@ -19,8 +19,8 @@ WarehousesTableWindow::WarehousesTableWindow(
   m_DeleteStmt = m_Conn->createStatement("DELETE FROM warehouses WHERE warehouse_id = :1");
   m_UpdateStmt = m_Conn->createStatement("SELECT * FROM warehouses");
 
-  m_SignalConnection.Attach(m_Countries->TableChangedSignal, this, &WarehousesTableWindow::UpdateTable);
-  m_SignalConnection.Connect();
+  m_SignalConnections.AddConnection(m_Countries->TableChangedSignal, this, &WarehousesTableWindow::UpdateTable);
+  m_SignalConnections.AddConnection(m_Countries->TableChangedSignal, &TableChangedSignal, &sig::CSignal<>::Emit);
 }
 
 WarehousesTableWindow::~WarehousesTableWindow()
@@ -29,8 +29,7 @@ WarehousesTableWindow::~WarehousesTableWindow()
   m_Conn->terminateStatement(m_DeleteStmt);
   m_Conn->terminateStatement(m_UpdateStmt);
 
-  if (m_SignalConnection.IsConnected())
-    m_SignalConnection.Disconnect();
+  m_SignalConnections.Disconnect();
 }
 
 void WarehousesTableWindow::OnUIRender()

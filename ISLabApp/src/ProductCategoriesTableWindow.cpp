@@ -245,7 +245,18 @@ void ProductCategoriesTableWindow::Delete(
   }
 }
 
-const Table<int, std::string>& ProductCategoriesTableWindow::GetTable() const
+const Table<int, std::string> & ProductCategoriesTableWindow::GetTable() const
 {
   return m_Table;
+}
+
+std::string_view ProductCategoriesTableWindow::GetCategoryName(
+    const int _CategoryID
+  )
+{
+  for (const auto & [ID, Name] : m_Table)
+    if (ID == _CategoryID)
+      return Name;
+
+  return "";
 }
