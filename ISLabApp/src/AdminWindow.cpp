@@ -8,9 +8,11 @@
 #include "WarehousesTableWindow.h"
 
 #include <imgui.h>
+#include <implot.h>
 #include <algorithm>
 #include <map>
 #include <set>
+#include <ctime>
 
 AdminWindow::AdminWindow(
     oci::Environment * _Env,
@@ -78,7 +80,6 @@ void AdminWindow::OnUIRender()
     }
     ImGui::EndTabBar();
   }
-
 
   RenderErrorWindow();
   ImGui::End();
@@ -239,4 +240,88 @@ bool AdminWindow::IsFilterSuitable(
   ) const
 {
   return m_StatusFilter.at(_Order.Status);
+}
+
+void AdminWindow::RenderCharts()
+{
+  struct SalesPoint
+  {
+    double Income, Outlay, Date;
+  };
+
+  std::vector<SalesPoint> Data;
+
+  for (const auto & Order : m_OrderEntries)
+  {
+    std::tm OrderDate{};
+    int Year = 0;
+    unsigned Month = 0, Day = 0, Hour = 0, Minute = 0, Second = 0;
+    Order.Date.getDate(Year, Month, Day, Hour, Minute, Second);
+
+    OrderDate.tm_year = Year - 1900;
+    OrderDate.tm_mon  = Month - 1;
+    OrderDate.tm_mday = Day;
+    OrderDate.tm_hour = Hour;
+    OrderDate.tm_min  = Minute;
+    OrderDate.tm_sec  = Second;
+
+    const double Income = Order.Product.Price * Order.Quantity;
+    const double Outlay = Order.Product.Cost * Order.Quantity;
+
+    Data.emplace_back(SalesPoint{
+        Income,
+        Outlay,
+        static_cast<double>(std::mktime(&OrderDate))
+      });
+  }
+
+  std::sort(Data.begin(), Data.end(), [](const auto _lhs, const auto _rhs) { return _lhs.Date < _rhs.Date; });
+
+  auto IncomeGetter = [](int _i, void * _point) -> ImPlotPoint
+  {
+    const auto & Point = static_cast<SalesPoint *>(_point)[_i];
+    return { Point.Date, Point.Income };
+  };
+  auto OutlayGetter = [](int _i, void * _point) -> ImPlotPoint
+  {
+    const auto & Point = static_cast<SalesPoint *>(_point)[_i];
+    return { Point.Date, Point.Outlay };
+  };
+  auto ProfitGetter = [](int _i, void * _point) -> ImPlotPoint
+  {
+    const auto & Point = static_cast<SalesPoint *>(_point)[_i];
+    return { Point.Date, Point.Income - Point.Outlay };
+  };
+
+  const auto AvailSize = ImGui::GetContentRegionAvail();
+
+  if (ImPlot::BeginPlot("Sales", ImVec2(-1, AvailSize.y / 2)))
+  {
+    ImPlot::SetupAxes("Days", "Sales");
+    ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
+    ImPlot::SetupAxisFormat(ImAxis_Y1, "$%.0f");
+
+    ImPlot::PlotLineG("Income", IncomeGetter, Data.data(), Data.size(), ImPlotLineFlags_Shaded);
+    ImPlot::PlotLineG("Outlay", OutlayGetter, Data.data(), Data.size(), ImPlotLineFlags_Shaded);
+    ImPlot::PlotLineG("Profit", ProfitGetter, Data.data(), Data.size(), ImPlotLineFlags_Shaded);
+    ImPlot::EndPlot();
+  }
+
+  for (std::size_t i = 1; i < Data.size(); ++i)
+  {
+    Data[i].Income += Data[i - 1].Income;
+    Data[i].Outlay += Data[i - 1].Outlay;
+  }
+
+  if (ImPlot::BeginPlot("Cumulative sales", ImVec2(-1, -1)))
+  {
+    ImPlot::SetupAxes("Days", "Sales");
+    ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
+    ImPlot::SetupAxisFormat(ImAxis_Y1, "$%.0f");
+
+    ImPlot::PlotLineG("Income", IncomeGetter, Data.data(), Data.size(), ImPlotLineFlags_Shaded);
+    ImPlot::PlotLineG("Outlay", OutlayGetter, Data.data(), Data.size(), ImPlotLineFlags_Shaded);
+    ImPlot::PlotLineG("Profit", ProfitGetter, Data.data(), Data.size(), ImPlotLineFlags_Shaded);
+    ImPlot::EndPlot();
+  }
 }
