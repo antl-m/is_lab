@@ -127,7 +127,7 @@ void OrdersTableWindow::RenderDeleteWindow()
 
     if (ButtonCentered("OK"))
     {
-      Delete(m_CustomerId);
+      Delete(m_OrderId);
       CloseDeleteWindow();
     }
 
